@@ -5,12 +5,13 @@ const categories = ["Beauty", "Clothing", "Electronics", "Groceries", "Medicine"
 const App: React.FC = () => {
   const [option, setOption] = useState("categorical");
   const [items, setItems] = useState([{ category: categories[0], name: "" }]);
-  const [manualInput,setManualInput] = useState("");
+  const [manualInput, setManualInput] = useState("");
   const [selectionType, setSelectionType] = useState<"time" | "price">("time");
   const [result, setResult] = useState<string | null>(null);
 
   const addItem = () => setItems([...items, { category: categories[0], name: "" }]);
-  const removeItem = (index: number) => items.length > 1 && setItems(items.filter((_, i) => i !== index));
+  const removeItem = (index: number) =>
+    items.length > 1 && setItems(items.filter((_, i) => i !== index));
   const updateItem = (index: number, key: "category" | "name", value: string) => {
     const updatedItems = [...items];
     updatedItems[index][key] = value;
@@ -31,14 +32,21 @@ const App: React.FC = () => {
     };
 
     try {
-      // Send the payload to the backend endpoint (adjust the URL if necessary)
-      const response = await fetch("/api/evaluate", {
+      // Send the payload to the backend endpoint
+      const response = await fetch("http://127.0.0.1:5000/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const resultData = await response.json();
-      setResult(resultData.message);
+      
+      // Use regex to extract the JSON portion (starts with "{" and ends with "}")
+      const regex = /{[\s\S]*?}/;
+      const match = resultData.message.match(regex);
+      const jsonText = match ? match[0] : resultData.message;
+
+      // Set the result to display evaluationType and the parsed JSON
+      setResult(`Evaluation Type: ${resultData.evaluationType}\n NLP Result: ${jsonText}`);
     } catch (error) {
       console.error("Error sending data to backend:", error);
       setResult("There was an error processing your request.");
@@ -71,7 +79,9 @@ const App: React.FC = () => {
               option === "categorical" ? "border-blue-500" : "border-gray-400"
             }`}
           >
-            {option === "categorical" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
+            {option === "categorical" && (
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            )}
           </div>
           <span>Categorical</span>
         </label>
@@ -88,7 +98,9 @@ const App: React.FC = () => {
               option === "manual" ? "border-blue-500" : "border-gray-400"
             }`}
           >
-            {option === "manual" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
+            {option === "manual" && (
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            )}
           </div>
           <span>Manual</span>
         </label>
@@ -155,7 +167,9 @@ const App: React.FC = () => {
               selectionType === "time" ? "border-blue-500" : "border-gray-400"
             }`}
           >
-            {selectionType === "time" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
+            {selectionType === "time" && (
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            )}
           </div>
           <span>Time</span>
         </label>
@@ -172,7 +186,9 @@ const App: React.FC = () => {
               selectionType === "price" ? "border-blue-500" : "border-gray-400"
             }`}
           >
-            {selectionType === "price" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
+            {selectionType === "price" && (
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            )}
           </div>
           <span>Price</span>
         </label>
@@ -188,7 +204,7 @@ const App: React.FC = () => {
 
       {/* Result Display */}
       {result && (
-        <div className="mt-5 p-3 border rounded bg-gray-100 w-64 text-center">
+        <div className="mt-5 p-3 border rounded bg-gray-100 w-64 text-center whitespace-pre-wrap">
           <p>{result}</p>
         </div>
       )}
