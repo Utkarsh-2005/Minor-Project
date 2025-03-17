@@ -5,7 +5,7 @@ const categories = ["Beauty", "Clothing", "Electronics", "Groceries", "Medicine"
 const App: React.FC = () => {
   const [option, setOption] = useState("categorical");
   const [items, setItems] = useState([{ category: categories[0], name: "" }]);
-  const [manualInput, setManualInput] = useState("");
+  const [manualInput,setManualInput] = useState("");
   const [selectionType, setSelectionType] = useState<"time" | "price">("time");
   const [result, setResult] = useState<string | null>(null);
 
