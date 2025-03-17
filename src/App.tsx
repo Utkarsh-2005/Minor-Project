@@ -22,12 +22,26 @@ const App: React.FC = () => {
     setResult(null);
   };
 
-  const evaluate = () => {
-    if (option === "categorical") {
-      const itemList = items.map((item, index) => `${index + 1}.) ${item.category}: ${item.name || "N/A"}`).join(", ");
-      setResult(`You have selected ${itemList}. You want to evaluate on the basis of ${selectionType}.`);
-    } else {
-      setResult(`Your prompt: "${manualInput}"`);
+  const evaluate = async () => {
+    // Create payload based on the selected option
+    const payload = {
+      option, // "categorical" or "manual"
+      data: option === "categorical" ? items : manualInput, // object or string
+      selectionType, // "time" or "price"
+    };
+
+    try {
+      // Send the payload to the backend endpoint (adjust the URL if necessary)
+      const response = await fetch("/api/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const resultData = await response.json();
+      setResult(resultData.message);
+    } catch (error) {
+      console.error("Error sending data to backend:", error);
+      setResult("There was an error processing your request.");
     }
   };
 
@@ -46,16 +60,34 @@ const App: React.FC = () => {
       {/* Selection Options */}
       <div className="flex gap-5 mb-5">
         <label className="flex items-center space-x-2 cursor-pointer">
-          <input type="radio" checked={option === "categorical"} onChange={() => handleOptionChange("categorical")} className="hidden" />
-          <div className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${option === "categorical" ? "border-blue-500" : "border-gray-400"}`}>
+          <input
+            type="radio"
+            checked={option === "categorical"}
+            onChange={() => handleOptionChange("categorical")}
+            className="hidden"
+          />
+          <div
+            className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${
+              option === "categorical" ? "border-blue-500" : "border-gray-400"
+            }`}
+          >
             {option === "categorical" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
           </div>
           <span>Categorical</span>
         </label>
 
         <label className="flex items-center space-x-2 cursor-pointer">
-          <input type="radio" checked={option === "manual"} onChange={() => handleOptionChange("manual")} className="hidden" />
-          <div className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${option === "manual" ? "border-blue-500" : "border-gray-400"}`}>
+          <input
+            type="radio"
+            checked={option === "manual"}
+            onChange={() => handleOptionChange("manual")}
+            className="hidden"
+          />
+          <div
+            className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${
+              option === "manual" ? "border-blue-500" : "border-gray-400"
+            }`}
+          >
             {option === "manual" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
           </div>
           <span>Manual</span>
@@ -67,34 +99,79 @@ const App: React.FC = () => {
         <div className="flex flex-col gap-3 w-64">
           {items.map((item, index) => (
             <div key={index} className="flex gap-2 items-center">
-              <select className="p-2 border rounded flex-1" value={item.category} onChange={(e) => updateItem(index, "category", e.target.value)}>
+              <select
+                className="p-2 border rounded flex-1"
+                value={item.category}
+                onChange={(e) => updateItem(index, "category", e.target.value)}
+              >
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
-              <input type="text" placeholder="Item name" value={item.name} onChange={(e) => updateItem(index, "name", e.target.value)} className="p-2 border rounded flex-1" />
-              <button onClick={() => removeItem(index)} className="text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded">−</button>
+              <input
+                type="text"
+                placeholder="Item name"
+                value={item.name}
+                onChange={(e) => updateItem(index, "name", e.target.value)}
+                className="p-2 border rounded flex-1"
+              />
+              <button
+                onClick={() => removeItem(index)}
+                className="text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded"
+              >
+                −
+              </button>
             </div>
           ))}
-          <button onClick={addItem} className="mt-2 px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600">+</button>
+          <button
+            onClick={addItem}
+            className="mt-2 px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
+          >
+            +
+          </button>
         </div>
       ) : (
-        <textarea placeholder="Enter items manually" value={manualInput} onChange={(e) => setManualInput(e.target.value)} className="w-64 h-24 p-2 border rounded" />
+        <textarea
+          placeholder="Enter items manually"
+          value={manualInput}
+          onChange={(e) => setManualInput(e.target.value)}
+          className="w-64 h-24 p-2 border rounded"
+        />
       )}
 
       {/* Time or Price Selection */}
       <div className="flex gap-5 mt-5">
         <label className="flex items-center space-x-2 cursor-pointer">
-          <input type="radio" checked={selectionType === "time"} onChange={() => setSelectionType("time")} className="hidden" />
-          <div className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${selectionType === "time" ? "border-blue-500" : "border-gray-400"}`}>
+          <input
+            type="radio"
+            checked={selectionType === "time"}
+            onChange={() => setSelectionType("time")}
+            className="hidden"
+          />
+          <div
+            className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${
+              selectionType === "time" ? "border-blue-500" : "border-gray-400"
+            }`}
+          >
             {selectionType === "time" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
           </div>
           <span>Time</span>
         </label>
 
         <label className="flex items-center space-x-2 cursor-pointer">
-          <input type="radio" checked={selectionType === "price"} onChange={() => setSelectionType("price")} className="hidden" />
-          <div className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${selectionType === "price" ? "border-blue-500" : "border-gray-400"}`}>
+          <input
+            type="radio"
+            checked={selectionType === "price"}
+            onChange={() => setSelectionType("price")}
+            className="hidden"
+          />
+          <div
+            className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${
+              selectionType === "price" ? "border-blue-500" : "border-gray-400"
+            }`}
+          >
             {selectionType === "price" && <div className="w-3 h-3 bg-blue-500 rounded-full"></div>}
           </div>
           <span>Price</span>
@@ -102,7 +179,12 @@ const App: React.FC = () => {
       </div>
 
       {/* Evaluate Button */}
-      <button onClick={evaluate} className="mt-5 px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Evaluate</button>
+      <button
+        onClick={evaluate}
+        className="mt-5 px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Evaluate
+      </button>
 
       {/* Result Display */}
       {result && (
