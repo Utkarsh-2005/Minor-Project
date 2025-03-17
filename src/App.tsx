@@ -8,6 +8,7 @@ const App: React.FC = () => {
   const [option, setOption] = useState<"categorical" | "manual" | null>(null);
   const [items, setItems] = useState([{ category: categories[0], name: "" }]);
   const [manualInput, setManualInput] = useState("");
+
   const [selectionType, setSelectionType] = useState<"time" | "price" | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
@@ -31,6 +32,7 @@ const App: React.FC = () => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== index));
   };
 
+
   const updateItem = (index: number, key: "category" | "name", value: string) => {
     const updatedItems = [...items];
     updatedItems[index][key] = value;
@@ -43,28 +45,34 @@ const App: React.FC = () => {
     setTimeout(() => scrollToSection(categoryRef), 300);
   };
 
-  // const submitItems = () => {
-  //   if (option === "categorical" && items.some((item) => !item.name.trim())) {
-  //     toast.error("Please fill in all item names before proceeding.");
-  //     return;
-  //   }
-  //   if (option === "manual" && !manualInput.trim()) {
-  //     toast.error("Please enter items manually before proceeding.");
-  //     return;
-  //   }
-  //   setTimeout(() => scrollToSection(selectionRef), 300);
-  // };
 
-  const evaluate = () => {
-    if (!selectionType) {
-      toast.error("Please choose Time or Price before evaluating.");
-      return;
-    }
-    if (option === "categorical") {
-      const itemList = items.map((item, index) => `${index + 1}.) ${item.category}: ${item.name}`).join(", ");
-      setResult(`You have selected ${itemList}. You want to evaluate on the basis of ${selectionType}.`);
-    } else {
-      setResult(`Your prompt: "${manualInput}"`);
+  const evaluate = async () => {
+    // Create payload based on the selected option
+    const payload = {
+      option, // "categorical" or "manual"
+      data: option === "categorical" ? items : manualInput, // object or string
+      selectionType, // "time" or "price"
+    };
+
+    try {
+      // Send the payload to the backend endpoint
+      const response = await fetch("http://127.0.0.1:5000/api/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const resultData = await response.json();
+      
+      // Use regex to extract the JSON portion (starts with "{" and ends with "}")
+      const regex = /{[\s\S]*?}/;
+      const match = resultData.message.match(regex);
+      const jsonText = match ? match[0] : resultData.message;
+
+      // Set the result to display evaluationType and the parsed JSON
+      setResult(`Evaluation Type: ${resultData.evaluationType}\n NLP Result: ${jsonText}`);
+    } catch (error) {
+      console.error("Error sending data to backend:", error);
+      setResult("There was an error processing your request.");
     }
     setTimeout(() => scrollToSection(evaluateRef), 300);
   };
@@ -135,7 +143,9 @@ const App: React.FC = () => {
 
       {/* Result Section */}
       {result && (
+
         <div ref={evaluateRef} className="mt-10 p-3 border rounded-lg bg-white/50 text-center shadow-lg w-[90%] max-w-lg">
+
           <p>{result}</p>
         </div>
       )}
