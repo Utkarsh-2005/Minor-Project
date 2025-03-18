@@ -49,11 +49,11 @@ const App: React.FC = () => {
   const evaluate = async () => {
     // Create payload based on the selected option
     const payload = {
-      option, // "categorical" or "manual"
+      option: option, // "categorical" or "manual"
       data: option === "categorical" ? items : manualInput, // object or string
-      selectionType, // "time" or "price"
+      selectionType: selectionType, // "time" or "price"
     };
-
+    console.log(payload);
     try {
       // Send the payload to the backend endpoint
       const response = await fetch("http://127.0.0.1:5000/api/evaluate", {
@@ -62,14 +62,14 @@ const App: React.FC = () => {
         body: JSON.stringify(payload),
       });
       const resultData = await response.json();
-      
+      console.log(resultData);
       // Use regex to extract the JSON portion (starts with "{" and ends with "}")
       const regex = /{[\s\S]*?}/;
       const match = resultData.message.match(regex);
       const jsonText = match ? match[0] : resultData.message;
 
       // Set the result to display evaluationType and the parsed JSON
-      setResult(`Evaluation Type: ${resultData.evaluationType}\n NLP Result: ${jsonText}`);
+      setResult(`Evaluation Type: ${resultData.evaluationType}, ${option == 'manual'? ' NLP Result':'Your Input'}: ${jsonText}`);
     } catch (error) {
       console.error("Error sending data to backend:", error);
       setResult("There was an error processing your request.");
