@@ -47,6 +47,26 @@ const App: React.FC = () => {
 
 
   const evaluate = async () => {
+    if (!option) {
+      toast.error("Please select an input method (Categorical or Manual).");
+      return;
+    }
+
+    if (option === "categorical") {
+      if (items.some((item) => !item.name.trim())) {
+        toast.error("Please fill in all item names before evaluating.");
+        return;
+      }
+    } else if (option === "manual") {
+      if (!manualInput.trim()) {
+        toast.error("Please enter manual input before evaluating.");
+        return;
+      }
+    }
+    if (!selectionType) {
+      toast.error("Please select an evaluation basis (Time or Price).");
+      return;
+    }
     // Create payload based on the selected option
     const payload = {
       option: option, // "categorical" or "manual"
@@ -69,7 +89,7 @@ const App: React.FC = () => {
       const jsonText = match ? match[0] : resultData.message;
 
       // Set the result to display evaluationType and the parsed JSON
-      setResult(`Evaluation Type: ${resultData.evaluationType}, ${option == 'manual'? ' NLP Result':'Your Input'}: ${jsonText}`);
+      setResult(`Evaluation Type: ${resultData.evaluationType}, ${option == 'manual' ? ' NLP Result' : 'Your Input'}: ${jsonText}`);
     } catch (error) {
       console.error("Error sending data to backend:", error);
       setResult("There was an error processing your request.");
@@ -137,7 +157,7 @@ const App: React.FC = () => {
               </label>
             ))}
           </div>
-          <button  onClick={evaluate} className="mt-5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 w-full transition-all">Evaluate</button>
+          <button onClick={evaluate} className="mt-5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 w-full transition-all">Evaluate</button>
         </div>
       )}
 
