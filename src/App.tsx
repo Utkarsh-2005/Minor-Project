@@ -47,6 +47,26 @@ const App: React.FC = () => {
 
 
   const evaluate = async () => {
+    if (!option) {
+      toast.error("Please select an input method (Categorical or Manual).");
+      return;
+    }
+
+    if (option === "categorical") {
+      if (items.some((item) => !item.name.trim())) {
+        toast.error("Please fill in all item names before evaluating.");
+        return;
+      }
+    } else if (option === "manual") {
+      if (!manualInput.trim()) {
+        toast.error("Please enter manual input before evaluating.");
+        return;
+      }
+    }
+    if (!selectionType) {
+      toast.error("Please select an evaluation basis (Time or Price).");
+      return;
+    }
     // Create payload based on the selected option
     const payload = {
       option: option, // "categorical" or "manual"
