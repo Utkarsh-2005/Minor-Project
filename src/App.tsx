@@ -84,12 +84,12 @@ const App: React.FC = () => {
       const resultData = await response.json();
       console.log(resultData);
       // Use regex to extract the JSON portion (starts with "{" and ends with "}")
-      const regex = /{[\s\S]*?}/;
-      const match = resultData.message.match(regex);
-      const jsonText = match ? match[0] : resultData.message;
+      // const regex = /{[\s\S]*?}/;
+      // const match = resultData.message.match(regex);
+      // const jsonText = match ? match[0] : resultData.message;
 
       // Set the result to display evaluationType and the parsed JSON
-      setResult(`Evaluation Type: ${resultData.evaluationType}, ${option == 'manual'? ' NLP Result':'Your Input'}: ${jsonText}`);
+      setResult(`Evaluation Type: ${resultData.evaluationType}, Result: ${JSON.stringify(resultData.possible_paths)}`);
     } catch (error) {
       console.error("Error sending data to backend:", error);
       setResult("There was an error processing your request.");
