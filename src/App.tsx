@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -16,16 +17,13 @@ const App: React.FC = () => {
   const selectionRef = useRef<HTMLDivElement>(null);
   const evaluateRef = useRef<HTMLDivElement>(null);
 
-  // Retrieve geolocation on component mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
-        },
-        (_) => {
+        (position) => setUserLocation([position.coords.latitude, position.coords.longitude]),
+        () => {
           toast.error("Unable to retrieve location. Using default location.");
-          // Optionally set a default location if geolocation fails
+          
           setUserLocation([20.3488, 85.8162]);
         }
       );
@@ -64,22 +62,18 @@ const App: React.FC = () => {
   };
 
   const evaluate = async () => {
-    console.log("User Location:", userLocation);
     if (!option) {
       toast.error("Please select an input method (Categorical or Manual).");
       return;
     }
 
-    if (option === "categorical") {
-      if (items.some((item) => !item.name.trim())) {
-        toast.error("Please fill in all item names before evaluating.");
-        return;
-      }
-    } else if (option === "manual") {
-      if (!manualInput.trim()) {
-        toast.error("Please enter manual input before evaluating.");
-        return;
-      }
+    if (option === "categorical" && items.some((item) => !item.name.trim())) {
+      toast.error("Please fill in all item names before evaluating.");
+      return;
+    }
+    if (option === "manual" && !manualInput.trim()) {
+      toast.error("Please enter manual input before evaluating.");
+      return;
     }
     if (!selectionType) {
       toast.error("Please select an evaluation basis (Time or Price).");
@@ -89,30 +83,25 @@ const App: React.FC = () => {
       toast.error("User location is not available.");
       return;
     }
-    // Create payload based on the selected option and include user location
+
     const payload = {
-      option: option, // "categorical" or "manual"
-      data: option === "categorical" ? items : manualInput, // array or string
-      selectionType: selectionType, // "time" or "price"
-      user_location: userLocation, // e.g., [20.3488, 85.8162]
+      option,
+      data: option === "categorical" ? items : manualInput,
+      selectionType,
+      user_location: userLocation,
     };
-    console.log(payload);
+
     try {
-      // Send the payload to the backend endpoint
-      const response = await fetch("http://127.0.0.1:5000/api/evaluate", {
-        method: "POST",
+      const response = await axios.post("http://127.0.0.1:5000/api/evaluate", payload, {
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
       });
-      const resultData = await response.json();
-      console.log(resultData);
-      // Display evaluation type and possible paths
-      setResult(`Evaluation Type: ${resultData.evaluationType}, Result: ${JSON.stringify(resultData.possible_paths)}`);
+
+      setResult(`Evaluation Type: ${response.data.evaluationType}, Result: ${JSON.stringify(response.data.possible_paths)}`);
+      scrollToSection(evaluateRef);
     } catch (error) {
       console.error("Error sending data to backend:", error);
-      setResult("There was an error processing your request.");
+      toast.error("There was an error processing your request.");
     }
-    setTimeout(() => scrollToSection(evaluateRef), 300);
   };
 
   return (
@@ -165,25 +154,14 @@ const App: React.FC = () => {
           <h2 className="text-xl font-semibold text-center mb-4">Choose Evaluation Basis</h2>
           <div className="flex justify-center gap-5">
             {["time", "price"].map((type) => (
-              <label key={type} className="flex items-center gap-2 cursor-pointer text-lg">
-                <input type="radio" checked={selectionType === type} onChange={() => setSelectionType(type as "time" | "price")} className="hidden" />
-                <span className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${selectionType === type ? "border-indigo-600" : "border-gray-400"}`}>
-                  {selectionType === type && <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>}
-                </span>
-                <span className="capitalize">{type}</span>
-              </label>
+              <button key={type} onClick={() => setSelectionType(type as "time" | "price")} className={`px-4 py-2 rounded-lg ${selectionType === type ? "bg-indigo-600 text-white" : "bg-gray-300"}`}>{type}</button>
             ))}
           </div>
           <button onClick={evaluate} className="mt-5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 w-full transition-all">Evaluate</button>
         </div>
       )}
 
-      {/* Result Section */}
-      {result && (
-        <div ref={evaluateRef} className="mt-10 p-3 border rounded-lg bg-white/50 text-center shadow-lg w-[90%] max-w-lg">
-          <p>{result}</p>
-        </div>
-      )}
+      {result && <div ref={evaluateRef} className="mt-10 p-3 border rounded-lg bg-white/50 text-center shadow-lg w-[90%] max-w-lg">{result}</div>}
     </div>
   );
 };
