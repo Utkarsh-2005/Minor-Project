@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -8,13 +8,32 @@ const App: React.FC = () => {
   const [option, setOption] = useState<"categorical" | "manual" | null>(null);
   const [items, setItems] = useState([{ category: categories[0], name: "" }]);
   const [manualInput, setManualInput] = useState("");
-
   const [selectionType, setSelectionType] = useState<"time" | "price" | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
   const categoryRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
   const evaluateRef = useRef<HTMLDivElement>(null);
+
+  // Retrieve geolocation on component mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+        },
+        (_) => {
+          toast.error("Unable to retrieve location. Using default location.");
+          // Optionally set a default location if geolocation fails
+          setUserLocation([20.3488, 85.8162]);
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by this browser. Using default location.");
+      setUserLocation([20.3488, 85.8162]);
+    }
+  }, []);
 
   const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -32,7 +51,6 @@ const App: React.FC = () => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== index));
   };
 
-
   const updateItem = (index: number, key: "category" | "name", value: string) => {
     const updatedItems = [...items];
     updatedItems[index][key] = value;
@@ -45,8 +63,8 @@ const App: React.FC = () => {
     setTimeout(() => scrollToSection(categoryRef), 300);
   };
 
-
   const evaluate = async () => {
+    console.log("User Location:", userLocation);
     if (!option) {
       toast.error("Please select an input method (Categorical or Manual).");
       return;
@@ -67,11 +85,16 @@ const App: React.FC = () => {
       toast.error("Please select an evaluation basis (Time or Price).");
       return;
     }
-    // Create payload based on the selected option
+    if (!userLocation) {
+      toast.error("User location is not available.");
+      return;
+    }
+    // Create payload based on the selected option and include user location
     const payload = {
       option: option, // "categorical" or "manual"
-      data: option === "categorical" ? items : manualInput, // object or string
+      data: option === "categorical" ? items : manualInput, // array or string
       selectionType: selectionType, // "time" or "price"
+      user_location: userLocation, // e.g., [20.3488, 85.8162]
     };
     console.log(payload);
     try {
@@ -83,12 +106,7 @@ const App: React.FC = () => {
       });
       const resultData = await response.json();
       console.log(resultData);
-      // Use regex to extract the JSON portion (starts with "{" and ends with "}")
-      // const regex = /{[\s\S]*?}/;
-      // const match = resultData.message.match(regex);
-      // const jsonText = match ? match[0] : resultData.message;
-
-      // Set the result to display evaluationType and the parsed JSON
+      // Display evaluation type and possible paths
       setResult(`Evaluation Type: ${resultData.evaluationType}, Result: ${JSON.stringify(resultData.possible_paths)}`);
     } catch (error) {
       console.error("Error sending data to backend:", error);
@@ -138,7 +156,6 @@ const App: React.FC = () => {
           ) : (
             <textarea placeholder="Enter items manually" value={manualInput} onChange={(e) => setManualInput(e.target.value)} className="w-full h-24 p-2 border rounded-lg bg-white/50" />
           )}
-          {/* <button onClick={submitItems} className="mt-5 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full transition-all">Submit</button> */}
         </div>
       )}
 
@@ -157,15 +174,13 @@ const App: React.FC = () => {
               </label>
             ))}
           </div>
-          <button  onClick={evaluate} className="mt-5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 w-full transition-all">Evaluate</button>
+          <button onClick={evaluate} className="mt-5 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 w-full transition-all">Evaluate</button>
         </div>
       )}
 
       {/* Result Section */}
       {result && (
-
         <div ref={evaluateRef} className="mt-10 p-3 border rounded-lg bg-white/50 text-center shadow-lg w-[90%] max-w-lg">
-
           <p>{result}</p>
         </div>
       )}
